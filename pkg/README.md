@@ -303,6 +303,15 @@ Creates a tar file from a list of inputs.
       </td>
     </tr>
     <tr>
+      <td><code>preserve_symlinks</code></td>
+      <td>
+        <code>bool, default False</code>
+        <p>
+          Preserve symlinks instead of dereferencing them.
+        </p>
+      </td>
+    </tr>
+    <tr>
       <td><code>symlinks</code></td>
       <td>
         <code>Dictionary, optional</code>

@@ -51,7 +51,8 @@ class TarFile(object):
   def __exit__(self, t, v, traceback):
     self.tarfile.close()
 
-  def add_file(self, f, destfile, mode=None, ids=None, names=None):
+  def add_file(self, f, destfile, mode=None, ids=None, names=None,
+               preserve_links=False):
     """Add a file to the tar file.
 
     Args:
@@ -62,6 +63,7 @@ class TarFile(object):
        ids: (uid, gid) for the file to set ownership
        names: (username, groupname) for the file to set ownership. `f` will be
          copied to `self.directory/destfile` in the layer.
+       preserve_links: if `True`, preserve symbolic links.
     """
     dest = destfile.lstrip('/')  # Remove leading slashes
     if self.directory and self.directory != '/':
@@ -81,7 +83,8 @@ class TarFile(object):
         uid=ids[0],
         gid=ids[1],
         uname=names[0],
-        gname=names[1])
+        gname=names[1],
+        preserve_links=preserve_links)
 
   def add_empty_file(self,
                      destfile,
@@ -255,6 +258,9 @@ def main():
     '--owner_names', action='append',
     help='Specify the owner names of individual files, e.g. '
          'path/to/file=root.root.')
+  parser.add_argument(
+      '--preserve_links', action='store_true',
+      help='Preserve symbolic links instead of dereferencing them.')
   parser.add_argument('--root_directory', default='./',
                       help='Default root directory is named "."')
   options = parser.parse_args()
@@ -314,7 +320,9 @@ def main():
       with open(options.manifest, 'r') as manifest_fp:
         manifest = json.load(manifest_fp)
         for f in manifest.get('files', []):
-          output.add_file(f['src'], f['dst'], **file_attributes(f['dst']))
+          output.add_file(f['src'], f['dst'],
+                          preserve_links=options.preserve_links,
+                          **file_attributes(f['dst']))
         for f in manifest.get('empty_files', []):
           output.add_empty_file(f, **file_attributes(f))
         for d in manifest.get('empty_dirs', []):
@@ -330,7 +338,8 @@ def main():
 
     for f in options.file or []:
       (inf, tof) = SplitNameValuePairAtSeparator(f, '=')
-      output.add_file(inf, tof, **file_attributes(tof))
+      output.add_file(inf, tof, preserve_links=options.preserve_links,
+                      **file_attributes(tof))
     for f in options.empty_file or []:
       output.add_empty_file(f, **file_attributes(f))
     for f in options.empty_dir or []:

@@ -66,6 +66,8 @@ def _pkg_tar_impl(ctx):
         args.append("--mtime=%d" % ctx.attr.mtime)
     if ctx.attr.portable_mtime:
         args.append("--mtime=portable")
+    if ctx.attr.preserve_links:
+        args += ["--preserve_links"]
 
     # Add runfiles if requested
     file_inputs = []
@@ -171,6 +173,8 @@ def _pkg_deb_impl(ctx):
     if ctx.attr.templates:
         args += ["--templates=@" + ctx.file.templates.path]
         files += [ctx.file.templates]
+    if ctx.attr.preserve_links:
+        args += ["--preserve_links"]
 
     # Conffiles can be specified by a file or a string list
     if ctx.attr.conffiles_file:
@@ -285,6 +289,7 @@ pkg_tar_impl = rule(
         "include_runfiles": attr.bool(),
         "empty_dirs": attr.string_list(),
         "remap_paths": attr.string_dict(),
+        "preserve_links": attr.bool(default = False),
 
         # Outputs
         "out": attr.output(),
@@ -415,7 +420,7 @@ def _pkg_zip_impl(ctx):
         },
         use_default_shell_env = True,
     )
-    return OutputGroupInfo(out=[ctx.outputs.out]);
+    return OutputGroupInfo(out = [ctx.outputs.out])
 
 pkg_zip_impl = rule(
     implementation = _pkg_zip_impl,

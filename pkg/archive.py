@@ -246,7 +246,8 @@ class TarFileWriter(object):
                uname='',
                gname='',
                mtime=None,
-               mode=None):
+               mode=None,
+               preserve_links=False):
     """Add a file to the current tar.
 
     Args:
@@ -262,6 +263,7 @@ class TarFileWriter(object):
       gname: owner group names.
       mtime: modification time to put in the archive.
       mode: unix permission mode of the file, default 0644 (0755).
+      preserve_links: if `True`, preserve symbolic links.
     """
     if file_content and os.path.isdir(file_content):
       # Recurse into directory
@@ -288,19 +290,31 @@ class TarFileWriter(object):
                     gname=gname,
                     mtime=mtime,
                     mode=0o755)
-    tarinfo = tarfile.TarInfo(name)
-    tarinfo.mtime = mtime
-    tarinfo.uid = uid
-    tarinfo.gid = gid
-    tarinfo.uname = uname
-    tarinfo.gname = gname
-    tarinfo.type = kind
-    if mode is None:
-      tarinfo.mode = 0o644 if kind == tarfile.REGTYPE else 0o755
+
+    if file_content:
+      is_link = os.path.islink(file_content)
     else:
-      tarinfo.mode = mode
-    if link:
-      tarinfo.linkname = link
+      is_link = os.path.islink(name)
+
+    if is_link and preserve_links:
+      tarinfo = self.tar.gettarinfo(file_content)
+      tarinfo.name = name
+      file_content = None
+    else:
+      tarinfo = tarfile.TarInfo(name)
+      tarinfo.mtime = mtime
+      tarinfo.uid = uid
+      tarinfo.gid = gid
+      tarinfo.uname = uname
+      tarinfo.gname = gname
+      tarinfo.type = kind
+      if mode is None:
+        tarinfo.mode = 0o644 if kind == tarfile.REGTYPE else 0o755
+      else:
+        tarinfo.mode = mode
+      if link:
+        tarinfo.linkname = link
+
     if content:
       content_bytes = content.encode('utf-8')
       tarinfo.size = len(content_bytes)
