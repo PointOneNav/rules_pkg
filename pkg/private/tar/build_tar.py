@@ -88,7 +88,8 @@ class TarFile(object):
       dest = self.directory + dest
     return dest
 
-  def add_file(self, f, destfile, mode=None, ids=None, names=None):
+  def add_file(self, f, destfile, mode=None, ids=None, names=None,
+               preserve_links=False):
     """Add a file to the tar file.
 
     Args:
@@ -99,6 +100,7 @@ class TarFile(object):
        ids: (uid, gid) for the file to set ownership
        names: (username, groupname) for the file to set ownership. `f` will be
          copied to `self.directory/destfile` in the layer.
+       preserve_links: (bool) if `True`, preserve symbolic links.
     """
     dest = self.normalize_path(destfile)
     # If mode is unspecified, derive the mode from the file's mode.
@@ -115,7 +117,8 @@ class TarFile(object):
         uid=ids[0],
         gid=ids[1],
         uname=names[0],
-        gname=names[1])
+        gname=names[1],
+        preserve_links=preserve_links)
 
   def add_empty_file(self,
                      destfile,
@@ -309,7 +312,7 @@ class TarFile(object):
             uname=names[0],
             gname=names[1])
 
-  def add_manifest_entry(self, entry, file_attributes):
+  def add_manifest_entry(self, entry, file_attributes, preserve_links=False):
     # Use the pkg_tar mode/owner remapping as a fallback
     non_abs_path = entry.dest.strip('/')
     if file_attributes:
@@ -339,7 +342,8 @@ class TarFile(object):
     elif entry.type == manifest.ENTRY_IS_EMPTY_FILE:
       self.add_empty_file(self.normalize_path(entry.dest), **attrs)
     else:
-      self.add_file(entry.src, entry.dest, **attrs)
+      self.add_file(entry.src, entry.dest, preserve_links=preserve_links,
+                    **attrs)
 
 
 def main():
@@ -391,6 +395,9 @@ def main():
       '--owner_names', action='append',
       help='Specify the owner names of individual files, e.g. '
            'path/to/file=root.root.')
+  parser.add_argument(
+      '--preserve_links', action='store_true',
+      help='Preserve symbolic links instead of dereferencing them.')
   parser.add_argument('--stamp_from', default='',
                       help='File to find BUILD_STAMP in')
   parser.add_argument('--create_parents',
@@ -474,7 +481,8 @@ def main():
       with open(options.manifest, 'r') as manifest_fp:
         manifest_entries = manifest.read_entries_from(manifest_fp)
         for entry in manifest_entries:
-          output.add_manifest_entry(entry, file_attributes)
+          output.add_manifest_entry(entry, file_attributes,
+                                    preserve_links=options.preserve_links)
 
     for tar in options.tar or []:
       output.add_tar(tar)

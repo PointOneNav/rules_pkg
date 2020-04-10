@@ -102,6 +102,8 @@ def _pkg_tar_impl(ctx):
         args.add("--mtime", "%d" % ctx.attr.mtime)
     if ctx.attr.portable_mtime:
         args.add("--mtime", "portable")
+    if ctx.attr.preserve_links:
+        args.add("--preserve_links")
     if ctx.attr.modes:
         for key in ctx.attr.modes:
             args.add("--modes", "%s=%s" % (_quote(key), ctx.attr.modes[key]))
@@ -264,6 +266,7 @@ pkg_tar_impl = rule(
         ),
         "empty_dirs": attr.string_list(),
         "remap_paths": attr.string_dict(),
+        "preserve_links": attr.bool(default = False),
         "compressor": attr.label(
             doc = """External tool which can compress the archive.""",
             executable = True,

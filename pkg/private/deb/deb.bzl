@@ -73,6 +73,8 @@ def _pkg_deb_impl(ctx):
     if ctx.attr.templates:
         args.append("--templates=@" + ctx.file.templates.path)
         files.append(ctx.file.templates)
+    if ctx.attr.preserve_links:
+        args += ["--preserve_links"]
     if ctx.attr.triggers:
         args.append("--triggers=@" + ctx.file.triggers.path)
         files.append(ctx.file.triggers)
