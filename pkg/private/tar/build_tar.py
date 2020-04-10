@@ -245,7 +245,7 @@ class TarFile(object):
 
     dest = destpath.strip('/')  # redundant, dests should never have / here
     if self.directory and self.directory != '/':
-      dest = self.directory.lstrip('/') + '/' + dest
+      dest = self.directory.rstrip('/') + '/' + dest
 
     # Again, we expect /-style paths.
     dest = normpath(dest)
