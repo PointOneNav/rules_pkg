@@ -65,7 +65,7 @@ class TarFile(object):
     """
     dest = destfile.lstrip('/')  # Remove leading slashes
     if self.directory and self.directory != '/':
-      dest = self.directory.lstrip('/') + '/' + dest
+      dest = self.directory.rstrip('/') + '/' + dest
     # If mode is unspecified, derive the mode from the file's mode.
     if mode is None:
       mode = 0o755 if os.access(f, os.X_OK) else 0o644
