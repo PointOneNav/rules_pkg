@@ -56,10 +56,11 @@ def _pkg_tar_impl(ctx):
     args = [
         "--output=" + ctx.outputs.out.path,
         package_dir_arg,
-        "--mode=" + ctx.attr.mode,
         "--owner=" + ctx.attr.owner,
         "--owner_name=" + ctx.attr.ownername,
     ]
+    if ctx.attr.mode != "":
+        args += ["--mode=" + ctx.attr.mode]
     if ctx.attr.mtime != _DEFAULT_MTIME:
         if ctx.attr.portable_mtime:
             fail("You may not set both mtime and portable_mtime")
@@ -275,7 +276,7 @@ pkg_tar_impl = rule(
         "deps": attr.label_list(allow_files = tar_filetype),
         "srcs": attr.label_list(allow_files = True),
         "files": attr.label_keyed_string_dict(allow_files = True),
-        "mode": attr.string(default = "0555"),
+        "mode": attr.string(),
         "modes": attr.string_dict(),
         "mtime": attr.int(default = _DEFAULT_MTIME),
         "portable_mtime": attr.bool(default = True),
