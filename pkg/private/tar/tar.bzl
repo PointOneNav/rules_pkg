@@ -61,7 +61,8 @@ def _pkg_tar_impl(ctx):
     # Start building the arguments.
     args = ctx.actions.args()
     args.add("--output", output_file.path)
-    args.add("--mode", ctx.attr.mode)
+    if ctx.attr.mode != "":
+        args.add("--mode", ctx.attr.mode)
     args.add("--owner", ctx.attr.owner)
     args.add("--owner_name", ctx.attr.ownername)
 
@@ -244,7 +245,7 @@ pkg_tar_impl = rule(
             doc = """Obsolete. Do not use.""",
             allow_files = True,
         ),
-        "mode": attr.string(default = "0555"),
+        "mode": attr.string(),
         "modes": attr.string_dict(),
         "mtime": attr.int(default = _DEFAULT_MTIME),
         "portable_mtime": attr.bool(default = True),
