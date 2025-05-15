@@ -247,7 +247,7 @@ pkg_tar_impl = rule(
             doc = """Obsolete. Do not use.""",
             allow_files = True,
         ),
-        "format": attr.string(default = "DEFAULT"),
+        "format": attr.string(default = "GNU"),
         "mode": attr.string(),
         "modes": attr.string_dict(),
         "mtime": attr.int(default = _DEFAULT_MTIME),
