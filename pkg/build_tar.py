@@ -33,19 +33,21 @@ class TarFile(object):
     pass
 
   def __init__(self, output, directory, compression, root_directory,
-               default_mtime):
+               default_mtime, tar_format=None):
     self.directory = directory
     self.output = output
     self.compression = compression
     self.root_directory = root_directory
     self.default_mtime = default_mtime
+    self.tar_format = tar_format
 
   def __enter__(self):
     self.tarfile = archive.TarFileWriter(
         self.output,
         self.compression,
         self.root_directory,
-        default_mtime=self.default_mtime)
+        default_mtime=self.default_mtime,
+        format=self.tar_format)
     return self
 
   def __exit__(self, t, v, traceback):
@@ -240,6 +242,9 @@ def main():
   parser.add_argument('--compression',
                       help='Compression (`gz` or `bz2`), default is none.')
   parser.add_argument(
+    '--format', default='DEFAULT', choices=('DEFAULT', 'USTAR', 'GNU', 'PAX'),
+    help='Specify the tar format to use: USTAR, GNU, PAX (default)')
+  parser.add_argument(
     '--modes', action='append',
     help='Specific mode to apply to specific file (from the file argument),'
          ' e.g., path/to/file=0455.')
@@ -302,10 +307,20 @@ def main():
         f = f[1:]
       ids_map[f] = (int(user), int(group))
 
+  if options.format == 'DEFAULT':
+    tar_format =  tarfile.DEFAULT_FORMAT
+  elif options.format == 'USTAR':
+    tar_format =  tarfile.USTAR_FORMAT
+  elif options.format == 'GNU':
+    tar_format =  tarfile.GNU_FORMAT
+  elif options.format == 'PAX':
+    tar_format =  tarfile.PAX_FORMAT
+
   # Add objects to the tar file
   with TarFile(
       options.output, GetFlagValue(options.directory),
-      options.compression, options.root_directory, options.mtime) as output:
+      options.compression, options.root_directory, options.mtime,
+      tar_format=tar_format) as output:
 
     def file_attributes(filename):
       if filename.startswith('/'):

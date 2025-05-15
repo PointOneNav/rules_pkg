@@ -110,7 +110,8 @@ class TarFileWriter(object):
                name,
                compression='',
                root_directory='./',
-               default_mtime=None):
+               default_mtime=None,
+               format=None):
     """TarFileWriter wraps tarfile.open().
 
     Args:
@@ -137,13 +138,17 @@ class TarFileWriter(object):
     else:
       self.default_mtime = int(default_mtime)
 
+    if format is None:
+      format = tarfile.DEFAULT_FORMAT
+
     self.fileobj = None
     if self.gz:
       # The Tarfile class doesn't allow us to specify gzip's mtime attribute.
       # Instead, we manually re-implement gzopen from tarfile.py and set mtime.
       self.fileobj = gzip.GzipFile(
           filename=name, mode='w', compresslevel=9, mtime=self.default_mtime)
-    self.tar = tarfile.open(name=name, mode=mode, fileobj=self.fileobj)
+    self.tar = tarfile.open(name=name, mode=mode, fileobj=self.fileobj,
+                            format=format)
     self.members = set([])
     self.directories = set([])
 

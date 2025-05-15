@@ -58,6 +58,7 @@ def _pkg_tar_impl(ctx):
         package_dir_arg,
         "--owner=" + ctx.attr.owner,
         "--owner_name=" + ctx.attr.ownername,
+        "--format=" + ctx.attr.format,
     ]
     if ctx.attr.mode != "":
         args += ["--mode=" + ctx.attr.mode]
@@ -276,6 +277,7 @@ pkg_tar_impl = rule(
         "deps": attr.label_list(allow_files = tar_filetype),
         "srcs": attr.label_list(allow_files = True),
         "files": attr.label_keyed_string_dict(allow_files = True),
+        "format": attr.string(default = "DEFAULT"),
         "mode": attr.string(),
         "modes": attr.string_dict(),
         "mtime": attr.int(default = _DEFAULT_MTIME),
