@@ -43,7 +43,8 @@ class TarFile(object):
     pass
 
   def __init__(self, output, directory, compression, compressor, create_parents,
-               allow_dups_from_deps, default_mtime, compression_level):
+               allow_dups_from_deps, default_mtime, compression_level,
+               tar_format=None):
     # Directory prefix on all output paths
     d = directory.strip('/')
     self.directory = (d + '/') if d else None
@@ -54,6 +55,7 @@ class TarFile(object):
     self.create_parents = create_parents
     self.allow_dups_from_deps = allow_dups_from_deps
     self.compression_level = compression_level
+    self.tar_format = tar_format
 
   def __enter__(self):
     self.tarfile = tar_writer.TarFileWriter(
@@ -63,7 +65,8 @@ class TarFile(object):
         self.create_parents,
         self.allow_dups_from_deps,
         default_mtime=self.default_mtime,
-        compression_level=self.compression_level)
+        compression_level=self.compression_level,
+        format=self.tar_format)
     return self
 
   def __exit__(self, t, v, traceback):
@@ -375,7 +378,9 @@ def main():
   compression.add_argument('--compressor',
                            help='Compressor program and arguments, '
                                 'e.g. `pigz -p 4`')
-
+  parser.add_argument(
+    '--format', default='DEFAULT', choices=('DEFAULT', 'USTAR', 'GNU', 'PAX'),
+    help='Specify the tar format to use: USTAR, GNU, PAX (default)')
   parser.add_argument(
       '--modes', action='append',
       help='Specific mode to apply to specific file (from the file argument),'
@@ -449,6 +454,15 @@ def main():
         f = f[1:]
       ids_map[f] = (int(user), int(group))
 
+  if options.format == 'DEFAULT':
+    tar_format =  tarfile.DEFAULT_FORMAT
+  elif options.format == 'USTAR':
+    tar_format =  tarfile.USTAR_FORMAT
+  elif options.format == 'GNU':
+    tar_format =  tarfile.GNU_FORMAT
+  elif options.format == 'PAX':
+    tar_format =  tarfile.PAX_FORMAT
+
   default_mtime = options.mtime
   if options.stamp_from:
     default_mtime = build_info.get_timestamp(options.stamp_from)
@@ -466,7 +480,8 @@ def main():
       default_mtime=default_mtime,
       create_parents=options.create_parents,
       allow_dups_from_deps=options.allow_dups_from_deps,
-      compression_level = compression_level) as output:
+      compression_level = compression_level,
+      tar_format=tar_format) as output:
 
     def file_attributes(filename):
       if filename.startswith('/'):

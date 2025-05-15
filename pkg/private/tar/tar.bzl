@@ -63,6 +63,7 @@ def _pkg_tar_impl(ctx):
     args.add("--output", output_file.path)
     args.add("--owner", ctx.attr.owner)
     args.add("--owner_name", ctx.attr.ownername)
+    args.add("--format", ctx.attr.format)
     if ctx.attr.mode != "":
         args.add("--mode", ctx.attr.mode)
     # Package dir can be specified by a file or inlined.
@@ -246,6 +247,7 @@ pkg_tar_impl = rule(
             doc = """Obsolete. Do not use.""",
             allow_files = True,
         ),
+        "format": attr.string(default = "DEFAULT"),
         "mode": attr.string(),
         "modes": attr.string_dict(),
         "mtime": attr.int(default = _DEFAULT_MTIME),

@@ -49,6 +49,7 @@ class TarFileWriter(object):
                create_parents=False,
                allow_dups_from_deps=True,
                default_mtime=None,
+               format=None,
                preserve_tar_mtimes=True,
                compression_level=-1):
     """TarFileWriter wraps tarfile.open().
@@ -69,6 +70,9 @@ class TarFileWriter(object):
       self.default_mtime = PORTABLE_MTIME
     else:
       self.default_mtime = int(default_mtime)
+
+    if format is None:
+      format = tarfile.DEFAULT_FORMAT
 
     self.fileobj = None
     self.compressor_cmd = (compressor or '').strip()
@@ -102,7 +106,7 @@ class TarFileWriter(object):
     self.name = name
 
     self.tar = tarfile.open(name=name, mode=mode, fileobj=self.fileobj,
-                            format=tarfile.GNU_FORMAT)
+                            format=format)
     self.members = set()
     self.directories = set()
     # Preseed the added directory list with things we should not add. If we
