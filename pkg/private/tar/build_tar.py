@@ -24,6 +24,7 @@ from pkg.private import build_info
 from pkg.private import manifest
 from pkg.private.tar import tar_writer
 
+_DEBUG_VERBOSITY = 2
 
 def normpath(path):
   r"""Normalize a path to the format we need it.
@@ -87,8 +88,14 @@ class TarFile(object):
     # We silently de-dup that. If people come up with a real use case for
     # the /a/b/a/b/rest... output we can start an issue and come up with a
     # solution at that time.
+    if _DEBUG_VERBOSITY > 1:
+      print("In normalize path: %s" % path, " Starts with dir: ", dest.startswith(self.directory) if self.directory else "No dir")
+      print("Self directory: ", self.directory)
     if self.directory and not dest.startswith(self.directory):
+    # if self.directory:
       dest = self.directory + dest
+    if _DEBUG_VERBOSITY > 1:
+      print("Out normalize path: %s" % dest)
     return dest
 
   def add_file(self, f, destfile, mode=None, ids=None, names=None,
@@ -317,6 +324,8 @@ class TarFile(object):
 
   def add_manifest_entry(self, entry, file_attributes, preserve_links=False):
     # Use the pkg_tar mode/owner remapping as a fallback
+    if _DEBUG_VERBOSITY > 1:
+      print('DEBUG: Manifest entry source: %s, dest: %s' % (entry.src, entry.dest))
     non_abs_path = entry.dest.strip('/')
     if file_attributes:
       attrs = file_attributes(non_abs_path)
@@ -493,6 +502,7 @@ def main():
       }
 
     if options.manifest:
+      print("Options manifest: ", options.manifest)
       with open(options.manifest, 'r') as manifest_fp:
         manifest_entries = manifest.read_entries_from(manifest_fp)
         for entry in manifest_entries:

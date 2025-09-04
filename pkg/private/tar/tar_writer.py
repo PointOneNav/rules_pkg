@@ -33,7 +33,7 @@ COMPRESSIONS = ('', 'gz', 'bz2', 'xz') if HAS_LZMA else ('', 'gz', 'bz2')
 # See: https://github.com/bazelbuild/bazel/issues/1299
 PORTABLE_MTIME = 946684800  # 2000-01-01 00:00:00.000 UTC
 
-_DEBUG_VERBOSITY = 0
+_DEBUG_VERBOSITY = 2
 
 
 class TarFileWriter(object):
@@ -124,6 +124,8 @@ class TarFileWriter(object):
     self.close()
 
   def _have_added(self, path):
+    if _DEBUG_VERBOSITY > 1:
+      print('DEBUG: trying to add path: ', path, ' Members: ', self.members, ' Dirs: ', self.directories)
     """Have we added this file before."""
     return (path in self.members) or (path in self.directories)
 
@@ -185,7 +187,6 @@ class TarFileWriter(object):
     parent_path = ''
     for next_level in dirs[0:-1]:
       parent_path = parent_path + next_level + '/'
-
       if self.create_parents and not self._have_added(parent_path):
         self.add_directory_path(
           parent_path,
@@ -235,7 +236,8 @@ class TarFileWriter(object):
 
     if mtime is None:
       mtime = self.default_mtime
-
+    if _DEBUG_VERBOSITY > 1:
+      print('Debug name: ', name)
     # Make directories up the file
     self.conditionally_add_parents(name, mtime=mtime, mode=0o755, uid=uid, gid=gid, uname=uname, gname=gname)
 
@@ -262,7 +264,11 @@ class TarFileWriter(object):
         tarinfo.mode = mode
       if link:
         tarinfo.linkname = link
-
+    if _DEBUG_VERBOSITY > 1:
+      print('DEBUG: adding file', tarinfo.name, 'link:', tarinfo.linkname if link else '', 'type:', kind,
+            'mode:', oct(tarinfo.mode), 'uid:', tarinfo.uid, 'gid:', tarinfo.gid,
+            'uname:', tarinfo.uname, 'gname:', tarinfo.gname,
+            'mtime:', tarinfo.mtime)
     if content:
       content_bytes = content.encode('utf-8')
       tarinfo.size = len(content_bytes)
