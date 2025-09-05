@@ -119,8 +119,8 @@ def _pkg_tar_impl(ctx):
             )
     if ctx.attr.compression_level:
         args.add("--compression_level", ctx.attr.compression_level)
-    if ctx.attr.disable_prefix_duplication:
-        args.add("--disable_prefix_duplication")
+    if ctx.attr.allow_prefix_duplication:
+        args.add("--allow_prefix_duplication")
     # Now we begin processing the files.
     path_mapper = None
     if ctx.attr.remap_paths:
@@ -280,9 +280,10 @@ pkg_tar_impl = rule(
         ),
         "create_parents": attr.bool(default = True),
         "allow_duplicates_from_deps": attr.bool(default = False),
-        "disable_prefix_duplication": attr.bool(
+        "allow_prefix_duplication": attr.bool(
             default = False,
-            doc = """If true, do not add the directory prefix again if it is already present in the source path.""",
+            doc = """If true, we allow prefix duplication in the output tar. By default prefix duplication is not allowed.""" +
+                  """For example if you want to create a tar with package_dir = "a/b" and a srcs = ["a/b/c.txt"],"""
         ),
         "compression_level": attr.int(
             doc = """Specify the numeric compression level in gzip mode; may be 0-9 or -1 (default to 6).""",
