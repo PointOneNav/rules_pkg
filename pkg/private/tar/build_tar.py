@@ -24,6 +24,7 @@ from pkg.private import build_info
 from pkg.private import manifest
 from pkg.private.tar import tar_writer
 
+
 def normpath(path):
   r"""Normalize a path to the format we need it.
 
@@ -55,7 +56,6 @@ class TarFile(object):
     self.allow_dups_from_deps = allow_dups_from_deps
     self.compression_level = compression_level
     self.tar_format = tar_format
-    print("Inside Tarfile allow prefix duplication: ", allow_prefix_duplication)
     self.allow_prefix_duplication = allow_prefix_duplication
 
   def __enter__(self):
@@ -477,7 +477,6 @@ def main():
   if options.compression_level:
     compression_level = int(options.compression_level)
 
-  print("Disable prefix duplication: ", options.disable_prefix_duplication)
   # Add objects to the tar file
   with TarFile(
       options.output,
@@ -501,7 +500,6 @@ def main():
       }
 
     if options.manifest:
-      print("Options manifest: ", options.manifest)
       with open(options.manifest, 'r') as manifest_fp:
         manifest_entries = manifest.read_entries_from(manifest_fp)
         for entry in manifest_entries:
