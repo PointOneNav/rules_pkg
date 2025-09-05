@@ -24,8 +24,6 @@ from pkg.private import build_info
 from pkg.private import manifest
 from pkg.private.tar import tar_writer
 
-_DEBUG_VERBOSITY = 2
-
 def normpath(path):
   r"""Normalize a path to the format we need it.
 
@@ -45,7 +43,7 @@ class TarFile(object):
 
   def __init__(self, output, directory, compression, compressor, create_parents,
                allow_dups_from_deps, default_mtime, compression_level,
-               tar_format=None):
+               tar_format=None, allow_prefix_duplication=True):
     # Directory prefix on all output paths
     d = directory.strip('/')
     self.directory = (d + '/') if d else None
@@ -57,6 +55,8 @@ class TarFile(object):
     self.allow_dups_from_deps = allow_dups_from_deps
     self.compression_level = compression_level
     self.tar_format = tar_format
+    print("Inside Tarfile allow prefix duplication: ", allow_prefix_duplication)
+    self.allow_prefix_duplication = allow_prefix_duplication
 
   def __enter__(self):
     self.tarfile = tar_writer.TarFileWriter(
@@ -88,14 +88,10 @@ class TarFile(object):
     # We silently de-dup that. If people come up with a real use case for
     # the /a/b/a/b/rest... output we can start an issue and come up with a
     # solution at that time.
-    if _DEBUG_VERBOSITY > 1:
-      print("In normalize path: %s" % path, " Starts with dir: ", dest.startswith(self.directory) if self.directory else "No dir")
-      print("Self directory: ", self.directory)
-    if self.directory and not dest.startswith(self.directory):
-    # if self.directory:
+    if self.directory and self.allow_prefix_duplication:
       dest = self.directory + dest
-    if _DEBUG_VERBOSITY > 1:
-      print("Out normalize path: %s" % dest)
+    elif self.directory and not dest.startswith(self.directory):
+      dest = self.directory + dest
     return dest
 
   def add_file(self, f, destfile, mode=None, ids=None, names=None,
@@ -324,8 +320,6 @@ class TarFile(object):
 
   def add_manifest_entry(self, entry, file_attributes, preserve_links=False):
     # Use the pkg_tar mode/owner remapping as a fallback
-    if _DEBUG_VERBOSITY > 1:
-      print('DEBUG: Manifest entry source: %s, dest: %s' % (entry.src, entry.dest))
     non_abs_path = entry.dest.strip('/')
     if file_attributes:
       attrs = file_attributes(non_abs_path)
@@ -424,6 +418,9 @@ def main():
   parser.add_argument(
       '--compression_level', default=-1,
       help='Specify the numeric compress level in gzip mode; may be 0-9 or -1 (default to 6).')
+  parser.add_argument(
+      '--disable_prefix_duplication', action='store_true',
+      help='If a directory prefix is specified, do not add it again if it is already present in the source path.')
   options = parser.parse_args()
 
   # Parse modes arguments
@@ -480,6 +477,7 @@ def main():
   if options.compression_level:
     compression_level = int(options.compression_level)
 
+  print("Disable prefix duplication: ", options.disable_prefix_duplication)
   # Add objects to the tar file
   with TarFile(
       options.output,
@@ -490,7 +488,8 @@ def main():
       create_parents=options.create_parents,
       allow_dups_from_deps=options.allow_dups_from_deps,
       compression_level = compression_level,
-      tar_format=tar_format) as output:
+      tar_format=tar_format,
+      allow_prefix_duplication=True if not options.disable_prefix_duplication else False) as output:
 
     def file_attributes(filename):
       if filename.startswith('/'):
