@@ -44,7 +44,7 @@ class TarFile(object):
 
   def __init__(self, output, directory, compression, compressor, create_parents,
                allow_dups_from_deps, default_mtime, compression_level,
-               tar_format=None):
+               tar_format=None, allow_prefix_duplication=False):
     # Directory prefix on all output paths
     d = directory.strip('/')
     self.directory = (d + '/') if d else None
@@ -56,6 +56,7 @@ class TarFile(object):
     self.allow_dups_from_deps = allow_dups_from_deps
     self.compression_level = compression_level
     self.tar_format = tar_format
+    self.allow_prefix_duplication = allow_prefix_duplication
 
   def __enter__(self):
     self.tarfile = tar_writer.TarFileWriter(
@@ -80,14 +81,16 @@ class TarFile(object):
     # No path should ever come in with slashes on either end, but protect
     # against that anyway.
     dest = dest.strip('/')
-    # This prevents a potential problem for users with both a prefix_dir and
-    # symlinks that also repeat the prefix_dir. The old behavior was that we
-    # would get just the symlink path. Now we are prefixing with the prefix,
-    # so you get the file in the wrong place.
-    # We silently de-dup that. If people come up with a real use case for
-    # the /a/b/a/b/rest... output we can start an issue and come up with a
-    # solution at that time.
-    if self.directory and not dest.startswith(self.directory):
+    # The default behavior is to not allow duplication of the prefix. If a
+    # directory structure that contains duplicate prefixes is desired, the
+    # allow_prefix_duplication flag can be set to True. Preventing prefix
+    # duplication prevents a potential problem for users with both a prefix_dir
+    # and symlinks that also repeat the prefix_dir. The behavior can be 
+    # controlled by the user in pkg_tar as a bazel level option to allow fine
+    # grained control.
+    if self.directory and self.allow_prefix_duplication:
+      dest = self.directory + dest
+    elif self.directory and not dest.startswith(self.directory):
       dest = self.directory + dest
     return dest
 
@@ -415,6 +418,11 @@ def main():
   parser.add_argument(
       '--compression_level', default=-1,
       help='Specify the numeric compress level in gzip mode; may be 0-9 or -1 (default to 6).')
+  parser.add_argument(
+      '--allow_prefix_duplication', action='store_true',
+      help='Allow prefix duplication in the output tar. By default prefix duplication is not allowed.' +
+           ' For example if you want to create a tar with package_dir = "a/b" and a srcs = ["a/b/c.txt"],'
+           ' you can set this flag to allow the prefix "a/b" to be duplicated in the tar.')
   options = parser.parse_args()
 
   # Parse modes arguments
@@ -481,7 +489,8 @@ def main():
       create_parents=options.create_parents,
       allow_dups_from_deps=options.allow_dups_from_deps,
       compression_level = compression_level,
-      tar_format=tar_format) as output:
+      tar_format=tar_format,
+      allow_prefix_duplication=options.allow_prefix_duplication) as output:
 
     def file_attributes(filename):
       if filename.startswith('/'):
